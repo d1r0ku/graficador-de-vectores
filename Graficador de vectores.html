@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graficador de vectores</title>
+<style>
+  :root{
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Inter,"Segoe UI",system-ui,sans-serif;
+    --card:rgba(255,255,255,.72); --card-b:rgba(255,255,255,.9);
+    --in:#ffffffcc; --soft:#fff4e8; --txt:#3b2a3f; --mut:#8a6f86; --line:#f0cdb8; --acc:#ff8a4c; --acc2:#ff5f8f;
+    --shadow:0 10px 30px rgba(255,140,90,.25);
+  }
+  body.dark{
+    --card:rgba(30,26,66,.78); --card-b:#4a3f86;
+    --in:#171338aa; --soft:#2c2660; --txt:#f5eeff; --mut:#b4a6e0; --line:#4a3f86; --acc:#ff9a52; --acc2:#ff6fa5;
+    --shadow:0 10px 30px rgba(10,5,40,.55);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--font);color:var(--txt);padding:20px;min-height:100vh;transition:color .6s;-webkit-font-smoothing:antialiased}
+  .bg{position:fixed;inset:0;z-index:-2;transition:opacity 1s ease}
+  .bg.sunrise{background:linear-gradient(180deg,#bfe4ff 0%,#ffe7c2 45%,#ffc2a1 75%,#ff9fb0 100%);opacity:1}
+  .bg.sunset{background:linear-gradient(180deg,#2a2160 0%,#6b3f8f 38%,#d1607f 70%,#ff9a52 100%);opacity:0}
+  body.dark .bg.sunrise{opacity:0}
+  body.dark .bg.sunset{opacity:1}
+  .sun{position:fixed;z-index:-1;right:7%;top:70px;width:110px;height:110px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#fff7c2,#ffd35c 60%,#ffb347);
+    box-shadow:0 0 70px 25px rgba(255,200,90,.55);animation:float 6s ease-in-out infinite;
+    transition:all 1.2s cubic-bezier(.5,0,.2,1)}
+  body.dark .sun{top:340px;right:12%;background:radial-gradient(circle at 35% 35%,#ffd1a0,#ff8a4c 65%,#ff6a3c);
+    box-shadow:0 0 90px 35px rgba(255,110,60,.55)}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  @keyframes rise{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+  @keyframes pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  @keyframes shine{0%{background-position:0 0}100%{background-position:200% 0}}
+  header{max-width:1250px;margin:0 auto 16px;display:flex;align-items:center;gap:14px;animation:rise .7s both}
+  .logo{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;font-size:26px;
+    background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:var(--shadow);animation:float 5s ease-in-out infinite}
+  header h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.5px}
+  header p{margin:2px 0 0;font-size:13px;color:var(--mut)}
+  .grow{flex:1}
+  .wrap{max-width:1250px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .card{background:var(--card);border:1.5px solid var(--card-b);border-radius:24px;padding:16px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow);
+    animation:rise .7s both;transition:background .6s,border-color .6s}
+  .card:nth-child(2){animation-delay:.1s}
+  .card h2{margin:0 0 10px;font-size:12px;letter-spacing:1px;color:var(--mut);text-transform:uppercase;font-weight:600}
+  .plot{flex:1 1 640px;min-width:320px}
+  canvas{display:block;width:100%;height:auto;border-radius:16px;background:#fff;border:1px solid #e5e5ea}
+  .side{flex:1 1 360px;max-width:500px;display:flex;flex-direction:column;gap:16px}
+  .side .card:nth-child(1){animation-delay:.15s}.side .card:nth-child(2){animation-delay:.25s}.side .card:nth-child(3){animation-delay:.35s}
+  .vec{display:grid;grid-template-columns:34px 56px 1fr 1fr 26px;gap:8px;align-items:center;
+    background:var(--soft);border-radius:16px;padding:10px;margin-bottom:10px;transition:transform .2s,box-shadow .2s,background .6s}
+  .vec:hover{transform:translateY(-2px);box-shadow:0 6px 16px #0002}
+  .vec.new{animation:pop .45s both}
+  .vec label{font-size:10px;color:var(--mut);display:block;margin-bottom:2px}
+  .vec .info{grid-column:2/-1;font-size:12px;color:var(--mut)}
+  input[type=color]{-webkit-appearance:none;appearance:none;width:30px;height:30px;border:0;border-radius:50%;padding:0;cursor:pointer;
+    background:none;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--line);transition:transform .2s}
+  input[type=color]:hover{transform:scale(1.18) rotate(8deg)}
+  input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
+  input[type=color]::-moz-color-swatch{border:0;border-radius:50%}
+  input[type=number],input[type=text]{width:100%;background:var(--in);border:1.5px solid var(--line);border-radius:11px;
+    color:var(--txt);padding:7px 9px;font:inherit;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+  input:focus{border-color:var(--acc);box-shadow:0 0 0 3px #ff8a4c33}
+  .x{background:none;border:0;color:#ff5d73;font-size:18px;cursor:pointer;transition:transform .2s}
+  .x:hover{transform:scale(1.3) rotate(90deg)}
+  .btn{font:inherit;font-weight:600;font-size:14px;border:1.5px solid var(--line);background:var(--soft);color:var(--txt);
+    border-radius:999px;padding:9px 16px;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px #0002;border-color:var(--acc)}
+  .btn:active{transform:scale(.96)}
+  .btn.main{border:0;color:#fff;background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc));background-size:200% 100%}
+  .btn.main:hover{animation:shine 1.2s linear infinite}
+  .pills{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{display:flex;align-items:center;gap:6px;background:var(--soft);border:1.5px solid var(--line);border-radius:999px;
+    padding:6px 12px;font-size:13px;cursor:pointer;user-select:none;transition:transform .2s,border-color .2s}
+  .pill:hover{transform:translateY(-1px);border-color:var(--acc)}
+  .pill input[type=checkbox]{accent-color:var(--acc)}
+  .pill input[type=color]{width:18px;height:18px;box-shadow:0 0 0 1.5px #fff,0 0 0 2.5px var(--line)}
+  .row2{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);flex-wrap:wrap;margin-top:12px}
+  .row2 input{width:80px}
+  select{font:inherit;background:var(--soft);color:var(--txt);border:1.5px solid var(--line);border-radius:999px;padding:6px 10px}
+  .stat{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat div{background:var(--soft);border-radius:14px;padding:10px;font-size:12px;color:var(--mut)}
+  .stat b{display:block;font-size:17px;color:var(--txt);margin-top:2px;font-weight:600}
+  #estado{grid-column:1/-1;text-align:center;border-radius:999px;font-weight:700;font-size:14px;transition:all .4s}
+  #estado.ok{background:#1fbf7a33;color:#12a566;animation:pop .5s}
+  body.dark #estado.ok{color:#5dffb0}
+  .bar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;margin-top:12px;flex-wrap:wrap;
+}
+.firma{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:13px;color:var(--mut);
+}
+.firma a{
+  color:var(--acc);font-weight:700;text-decoration:none;
+  border-bottom:2px dotted var(--acc);transition:all .25s;
+}
+.firma a:hover{color:var(--acc2);border-color:var(--acc2)}
+.firma .ver,
+.firma a.repo{
+  display:inline-block;padding:3px 11px;border-radius:999px;
+  background:var(--soft);border:1.5px solid var(--line);
+  font-weight:600;font-size:12px;color:var(--txt);
+  text-decoration:none;transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.firma a.repo:hover{
+  transform:translateY(-2px);border-color:var(--acc);
+  box-shadow:0 6px 14px #0002;letter-spacing:0;
+}
+</style>
+</head>
+<body>
+<div class="bg sunrise"></div><div class="bg sunset"></div><div class="sun"></div>
+
+<header>
+  <div class="logo">𖦹️</div>
+  <div>
+    <h1>Graficador de vectores .✦ ݁˖</h1>
+    <p>Gramos o Newtons · Plano cartesiano</p>
+  </div>
+  <div class="grow"></div>
+  <button class="btn" id="tema" onclick="cambiarTema()">⏾ Atardecer</button>
+</header>
+
+<div class="wrap">
+  <div class="card plot">
+    <h2>Plano cartesiano</h2>
+    <canvas id="c" width="1800" height="1300"></canvas>
+    <div class="bar">
+  <button class="btn main" onclick="descargar()">⬇ Descargar gráfica (PNG)</button>
+
+  <div class="firma">
+    ✮⋆˙ by
+    <a href="https://github.com/d1roku" target="_blank" rel="noopener">soku</a>
+    ˚˖𓍢ִ໋❀ ·
+    <span class="ver">versión 1.0</span>
+    <a class="repo" href="https://github.com/d1roku/graficador-de-vectores" target="_blank" rel="noopener">⌥ repo</a>
+  </div>
+</div>
+  </div>
+  
+  <div class="side">
+    <div class="card">
+      <h2>Vectores</h2>
+      <div id="lista"></div>
+      <button class="btn main" onclick="agregar()">＋ Agregar vector</button>
+    </div>
+
+    <div class="card">
+      <h2>Opciones</h2>
+      <div class="pills">
+        <label class="pill"><input type="checkbox" id="chkRes" checked> Resultante <input type="color" id="colRes" value="#111111"></label>
+        <label class="pill"><input type="checkbox" id="chkEq" checked> Equilibrante <input type="color" id="colEq" value="#e11d48"></label>
+        <label class="pill"><input type="checkbox" id="chkComp"> Componentes</label>
+        <label class="pill"><input type="checkbox" id="chkPol"> Polígono</label>
+        <label class="pill"><input type="checkbox" id="chkVal" checked> Valores</label>
+        <label class="pill"><input type="checkbox" id="chkAng" checked> Ángulos</label>
+      </div>
+      <div class="row2">
+        Unidad
+        <select id="unidad"><option value="g">gramos (g)</option><option value="N">Newtons (N)</option></select>
+        Rango ± <input type="number" id="rango" value="0" min="0" step="10"> <span>(0 = auto)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Resultados</h2>
+      <div class="stat">
+        <div>ΣFx<b id="sfx">0</b></div>
+        <div>ΣFy<b id="sfy">0</b></div>
+        <div>Resultante<b id="rm">0</b></div>
+        <div>Equilibrante<b id="eq">0</b></div>
+        <div id="estado">…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FONT='-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,"Segoe UI",system-ui,sans-serif';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const LW=900, LH=650, SC=2;
+const G=9.81, $=id=>document.getElementById(id);
+const paleta=['#2f6bff','#e83e8c','#ff7a1a','#12b886','#9b5de5','#00a8e8','#e6b800'];
+let vecs=[
+  {n:'FA',m:60,a:90,c:paleta[0],cx:0,cy:0},
+  {n:'FB',m:50,a:0,c:paleta[1],cx:0,cy:0},
+  {n:'FE',m:78,a:210,c:paleta[2],cx:0,cy:0}
+];
+const rad=d=>d*Math.PI/180;
+const comp=v=>({x:v.m*Math.cos(rad(v.a)),y:v.m*Math.sin(rad(v.a))});
+const factor=()=>$('unidad').value==='N'?G/1000:1;
+const esEq = v => /^f?e/i.test(v.n.trim());   // nombres: E, FE, Eq...
+function sumaSinEq(){
+  let x=0,y=0;
+  vecs.forEach(v=>{ if(!esEq(v)){ const c=comp(v); x+=c.x; y+=c.y; } });
+  return {x,y};
+}
+
+function sumaTarget(){let x=0,y=0;vecs.forEach(v=>{const c=comp(v);x+=c.x;y+=c.y});return{x,y}}
+function targetR(){
+  const manual=parseFloat($('rango').value);
+  if(manual>0) return manual/factor();
+  let mx=1,px=0,py=0;
+  vecs.forEach(v=>{const c=comp(v);px+=c.x;py+=c.y;
+    mx=Math.max(mx,Math.abs(c.x),Math.abs(c.y));
+    if($('chkPol').checked) mx=Math.max(mx,Math.abs(px),Math.abs(py));});
+  const s=sumaTarget();
+  mx=Math.max(mx,Math.abs(s.x),Math.abs(s.y));
+  return mx*1.25;
+}
+let Rc=targetR(), raf=null;
+
+function lista(){
+  $('lista').innerHTML='';
+  vecs.forEach((v,i)=>{
+    const d=document.createElement('div');d.className='vec';
+    d.innerHTML=`<input type="color" value="${v.c}" data-i="${i}" data-k="c" title="Cambiar color">
+      <div><label>Nombre</label><input type="text" value="${v.n}" data-i="${i}" data-k="n"></div>
+      <div><label>Masa (g)</label><input type="number" step="any" value="${v.m}" data-i="${i}" data-k="m"></div>
+      <div><label>Ángulo (°)</label><input type="number" step="any" value="${v.a}" data-i="${i}" data-k="a"></div>
+      <button class="x" title="Quitar" onclick="quitar(${i})">✕</button>
+      <div class="info" id="info${i}"></div>`;
+    $('lista').appendChild(d);
+  });
+  $('lista').querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{
+    const i=+e.target.dataset.i,k=e.target.dataset.k;
+    vecs[i][k]=(k==='n'||k==='c')?e.target.value:(parseFloat(e.target.value)||0);
+    go();
+  }));
+}
+function agregar(){
+  vecs.push({n:String.fromCharCode(65+vecs.length%26),m:50,a:45,c:paleta[vecs.length%7],cx:0,cy:0});
+  lista();$('lista').lastChild.classList.add('new');go();
+}
+function quitar(i){if(vecs.length>1){vecs.splice(i,1);lista();go();}}
+document.querySelectorAll('.pills input,#unidad,#rango').forEach(e=>e.addEventListener('input',go));
+
+function go(){ if(!raf) raf=requestAnimationFrame(tick); }
+function tick(){
+  raf=null;let mov=false;
+  vecs.forEach(v=>{
+    const t=comp(v);
+    v.cx+=(t.x-v.cx)*.16; v.cy+=(t.y-v.cy)*.16;
+    if(Math.abs(t.x-v.cx)<.01&&Math.abs(t.y-v.cy)<.01){v.cx=t.x;v.cy=t.y}else mov=true;
+  });
+  const tr=targetR();
+  Rc+=(tr-Rc)*.16;
+  if(Math.abs(tr-Rc)<tr*.002) Rc=tr; else mov=true;
+  render();
+  if(mov) raf=requestAnimationFrame(tick);
+}
+
+function nice(r){
+  const p=Math.pow(10,Math.floor(Math.log10(r/4)));
+  for(const m of [1,2,5,10]) if(p*m>=r/4) return p*m;
+  return p*10;
+}
+function flecha(x0,y0,x1,y1,col,w=3,dash=[]){
+  ctx.save();
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.lineCap='round';
+  ctx.setLineDash(dash);
+  const L=Math.hypot(x1-x0,y1-y0),t=Math.atan2(y1-y0,x1-x0),h=7+w*1.8;
+  const ex=L>h?x1-Math.cos(t)*h*.7:x1, ey=L>h?y1-Math.sin(t)*h*.7:y1;
+  ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(ex,ey);ctx.stroke();
+  ctx.setLineDash([]);
+  if(L>4){
+    ctx.beginPath();ctx.moveTo(x1,y1);
+    ctx.lineTo(x1-h*Math.cos(t-.38),y1-h*Math.sin(t-.38));
+    ctx.lineTo(x1-h*Math.cos(t+.38),y1-h*Math.sin(t+.38));
+    ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+}
+
+function render(){
+  const f=factor(), unidad=$('unidad').value, dec=unidad==='N'?4:1, suf=' '+unidad;
+  ctx.setTransform(SC,0,0,SC,0,0);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,LW,LH);
+  const cx=LW/2, cy=LH/2, s=(LH/2-36)/Rc;
+  const X=x=>cx+x*s, Y=y=>cy-y*s;
+  const xh=(LW/2-30)/s, yh=(LH/2-30)/s;
+  const st=nice(Rc), mn=st/5;
+
+  for(let i=-Math.ceil(xh/mn);i<=Math.ceil(xh/mn);i++){
+    ctx.strokeStyle=i%5===0?'#d5d9e0':'#eef0f4';ctx.lineWidth=i%5===0?1:.7;
+    ctx.beginPath();ctx.moveTo(X(i*mn),0);ctx.lineTo(X(i*mn),LH);ctx.stroke();
+  }
+  for(let i=-Math.ceil(yh/mn);i<=Math.ceil(yh/mn);i++){
+    ctx.strokeStyle=i%5===0?'#d5d9e0':'#eef0f4';ctx.lineWidth=i%5===0?1:.7;
+    ctx.beginPath();ctx.moveTo(0,Y(i*mn));ctx.lineTo(LW,Y(i*mn));ctx.stroke();
+  }
+  ctx.strokeStyle='#222';ctx.fillStyle='#222';ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(8,cy);ctx.lineTo(LW-14,cy);ctx.moveTo(cx,LH-8);ctx.lineTo(cx,14);ctx.stroke();
+  flecha(LW-30,cy,LW-6,cy,'#222',1.6);flecha(cx,30,cx,8,'#222',1.6);
+  ctx.font=`500 11px ${FONT}`;ctx.fillStyle='#666';
+  for(let k=-Math.ceil(xh/st);k<=Math.ceil(xh/st);k++){
+    if(!k)continue;const v=k*st, t=String(+(v*f).toPrecision(4));
+    ctx.strokeStyle='#222';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(X(v),cy-4);ctx.lineTo(X(v),cy+4);ctx.stroke();
+    ctx.textAlign='center';ctx.fillText(t,X(v),cy+17);
+  }
+  for(let k=-Math.ceil(yh/st);k<=Math.ceil(yh/st);k++){
+    if(!k)continue;const v=k*st, t=String(+(v*f).toPrecision(4));
+    ctx.beginPath();ctx.moveTo(cx-4,Y(v));ctx.lineTo(cx+4,Y(v));ctx.stroke();
+    ctx.textAlign='right';ctx.fillText(t,cx-8,Y(v)+4);
+  }
+  ctx.textAlign='left';ctx.fillText('0',cx-12,cy+15);
+  ctx.font=`italic 600 14px ${FONT}`;ctx.fillStyle='#222';
+  ctx.fillText('x ('+unidad+')',LW-62,cy-10);ctx.fillText('y ('+unidad+')',cx+12,18);
+
+  let ax=0,ay=0,sx=0,sy=0;
+  vecs.forEach(v=>{ if(!esEq(v)){ sx+=v.cx; sy+=v.cy; } });
+
+  if($('chkPol').checked){
+    vecs.forEach(v=>{
+      flecha(X(ax),Y(ay),X(ax+v.cx),Y(ay+v.cy),v.c,2,[3,5]);
+      ax+=v.cx;ay+=v.cy;});
+  }
+  vecs.forEach(v=>{
+    if($('chkComp').checked){
+      ctx.globalAlpha=.7;
+      flecha(X(0),Y(0),X(v.cx),Y(0),v.c,1.6,[6,5]);
+      flecha(X(v.cx),Y(0),X(v.cx),Y(v.cy),v.c,1.6,[6,5]);
+      ctx.globalAlpha=1;
+    }
+    if($('chkAng').checked&&Math.hypot(v.cx,v.cy)*s>30){
+      let a=Math.atan2(v.cy,v.cx);if(a<0)a+=2*Math.PI;
+      ctx.strokeStyle=v.c;ctx.lineWidth=1.4;ctx.beginPath();
+      ctx.arc(cx,cy,Math.min(30,Math.hypot(v.cx,v.cy)*s*.4),0,-a,true);ctx.stroke();
+    }
+  });
+  if($('chkRes').checked) flecha(X(0),Y(0),X(sx),Y(sy),$('colRes').value,3.2);
+  if($('chkEq').checked) flecha(X(0),Y(0),X(-sx),Y(-sy),$('colEq').value,3.2,[9,6]);
+  vecs.forEach(v=>flecha(X(0),Y(0),X(v.cx),Y(v.cy),v.c,3.6));
+
+  if($('chkVal').checked){
+    ctx.font=`600 12.5px ${FONT}`;
+    vecs.forEach(v=>{
+      const txt=`${v.n} = ${(v.m*f).toFixed(dec)}${suf} ∠ ${v.a}°`;
+      const w=ctx.measureText(txt).width+16;
+      let tx=X(v.cx)+(v.cx>=0?10:-w-10), ty=Y(v.cy)+(v.cy>=0?-28:8);
+      tx=Math.max(4,Math.min(LW-w-4,tx));ty=Math.max(4,Math.min(LH-26,ty));
+      ctx.fillStyle='#ffffffee';ctx.strokeStyle=v.c;ctx.lineWidth=1.8;
+      ctx.beginPath();ctx.roundRect(tx,ty,w,22,11);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#222';ctx.textAlign='left';ctx.fillText(txt,tx+8,ty+15.5);
+    });
+  }
+
+  const t=sumaTarget(), mag=Math.hypot(t.x,t.y);
+  const maxF=Math.max(...vecs.map(v=>v.m));
+  const ok=mag<0.02*maxF;
+  ctx.beginPath();ctx.arc(cx,cy,ok?9:5,0,7);
+  if(ok){ctx.strokeStyle='#18b56a';ctx.lineWidth=3;ctx.stroke();}
+  ctx.fillStyle='#222';ctx.beginPath();ctx.arc(cx,cy,3.5,0,7);ctx.fill();
+
+const r=sumaSinEq(), rmag=Math.hypot(r.x,r.y);
+let ang=Math.atan2(r.y,r.x)*180/Math.PI;if(ang<0)ang+=360;
+$('sfx').textContent=(t.x*f).toFixed(dec)+suf;
+$('sfy').textContent=(t.y*f).toFixed(dec)+suf;
+$('rm').textContent=(rmag*f).toFixed(dec)+suf+' · '+ang.toFixed(1)+'°';
+$('eq').textContent=(rmag*f).toFixed(dec)+suf+' · '+((ang+180)%360).toFixed(1)+'°';
+  const e=$('estado'), nuevo=ok?'ok':'';
+  if(e.className!==nuevo){e.className=nuevo;}
+  e.textContent=ok?'✓ ¡Sistema en equilibrio!':'Aún no hay equilibrio';
+  vecs.forEach((v,i)=>{const c=comp(v),el=$('info'+i);
+    if(el) el.textContent=`Fx = ${(c.x*f).toFixed(dec)}${suf} · Fy = ${(c.y*f).toFixed(dec)}${suf}`;});
+}
+
+function descargar(){
+  vecs.forEach(v=>{const c=comp(v);v.cx=c.x;v.cy=c.y});
+  Rc=targetR();render();
+  const a=document.createElement('a');
+  a.download='grafica-vectores.png';a.href=cv.toDataURL('image/png');a.click();
+}
+
+function cambiarTema(){
+  const d=document.body.classList.toggle('dark');
+  $('tema').textContent=d?'⛭ Amanecer':'⏾ Atardecer';
+  try{localStorage.setItem('tema',d?'dark':'light')}catch(e){}
+}
+try{ if(localStorage.getItem('tema')==='dark') cambiarTema(); }catch(e){}
+
+lista();go();
+</script>
+</body>
+</html>
