@@ -124,7 +124,7 @@
     <p>Gramos o Newtons · Plano cartesiano</p>
   </div>
   <div class="grow"></div>
-  <button class="btn" id="tema" onclick="cambiarTema()">⏾ Atardecer</button>
+  <button class="btn" id="tema" onclick="cambiarTema()">☾ Atardecer</button>
 </header>
 
 <div class="wrap">
@@ -381,7 +381,7 @@ function descargar(){
 
 function cambiarTema(){
   const d=document.body.classList.toggle('dark');
-  $('tema').textContent=d?'⛭ Amanecer':'⏾ Atardecer';
+  $('tema').textContent=d?'⛭ Amanecer':'☾ Atardecer';
   try{localStorage.setItem('tema',d?'dark':'light')}catch(e){}
 }
 try{ if(localStorage.getItem('tema')==='dark') cambiarTema(); }catch(e){}
