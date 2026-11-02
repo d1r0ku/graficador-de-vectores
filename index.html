@@ -195,7 +195,7 @@ let vecs=[
 const rad=d=>d*Math.PI/180;
 const comp=v=>({x:v.m*Math.cos(rad(v.a)),y:v.m*Math.sin(rad(v.a))});
 const factor=()=>$('unidad').value==='N'?G/1000:1;
-const esEq = v => /^f?e/i.test(v.n.trim());   // nombres: E, FE, Eq...
+const esEq = v => /^f?e/i.test(v.n.trim());
 function sumaSinEq(){
   let x=0,y=0;
   vecs.forEach(v=>{ if(!esEq(v)){ const c=comp(v); x+=c.x; y+=c.y; } });
