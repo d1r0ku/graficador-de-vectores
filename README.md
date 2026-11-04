@@ -68,6 +68,6 @@ Si eliges newtons, se usa `F = m · g` con g = 9.81 m/s², pasando los gramos a 
 
 <div align="center">
 
-[soku](https://github.com/d1roku) ˚˖𓍢ִ໋❀
+[soku](https://github.com/d1r0ku) ˚˖𓍢ִ໋❀
 
 </div>
