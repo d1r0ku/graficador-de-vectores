@@ -6,7 +6,7 @@
 
 Versión 1.0
 
-[✮ Abrir la página ✮](https://d1roku.github.io/graficador-de-vectores/)
+[✮ Abrir la página ✮](https://d1r0ku.github.io/graficador-de-vectores/)
 
 </div>
 
